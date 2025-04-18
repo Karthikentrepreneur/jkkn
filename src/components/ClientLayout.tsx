@@ -24,7 +24,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
                 <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                  MMS
+                  JKKN
                 </span>
               </div>
               <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
