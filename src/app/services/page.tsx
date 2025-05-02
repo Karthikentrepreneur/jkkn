@@ -1,147 +1,226 @@
 'use client'
 
-import { useState } from 'react'
-import { FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { motion } from 'framer-motion'
+import toast from 'react-hot-toast'
+import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 
 export default function ServicesPage() {
-  const [showAddModal, setShowAddModal] = useState(false)
+  const { user } = useAuth()
+  const [services, setServices] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [editingService, setEditingService] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    title: '',
+    description: ''
+  })
+
+  useEffect(() => {
+    fetchServices()
+  }, [])
+
+  const fetchServices = async () => {
+    try {
+      let query = supabase
+        .from('services')
+        .select('*, profiles(full_name)')
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (profile?.role === 'mentor') {
+          query = query.eq('mentor_id', user.id)
+        }
+      }
+
+      const { data, error } = await query
+      if (error) throw error
+      setServices(data || [])
+    } catch (error) {
+      console.error('Error fetching services:', error)
+      toast.error('Failed to load services')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      if (editingService) {
+        const { error } = await supabase
+          .from('services')
+          .update({
+            ...formData,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', editingService.id)
+
+        if (error) throw error
+        toast.success('Service updated successfully')
+      } else {
+        const { error } = await supabase
+          .from('services')
+          .insert([{
+            ...formData,
+            mentor_id: user?.id
+          }])
+
+        if (error) throw error
+        toast.success('Service created successfully')
+      }
+      setShowModal(false)
+      setEditingService(null)
+      fetchServices()
+    } catch (error) {
+      console.error('Error saving service:', error)
+      toast.error('Failed to save service')
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id)
+
+      if (error) throw error
+      toast.success('Service deleted successfully')
+      fetchServices()
+    } catch (error) {
+      console.error('Error deleting service:', error)
+      toast.error('Failed to delete service')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-900">Manage Services</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-        >
-          <FiPlus className="mr-2" />
-          Add Service
-        </button>
-      </div>
-
-      {/* Services Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {/* Sample service card - replace with actual data */}
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900">Library Card</h3>
-              <div className="flex space-x-2">
-                <button className="text-gray-400 hover:text-gray-500">
-                  <FiEdit2 className="h-5 w-5" />
-                </button>
-                <button className="text-gray-400 hover:text-red-500">
-                  <FiTrash2 className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Category:</span>
-                <span className="text-gray-900">Library Services</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Applicable To:</span>
-                <span className="text-gray-900">Students</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">SLA:</span>
-                <span className="text-gray-900">3 days</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Status:</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Active
-                </span>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-7xl mx-auto"
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900">Services</h1>
+          {user && (
+            <button
+              onClick={() => {
+                setEditingService(null)
+                setFormData({ title: '', description: '' })
+                setShowModal(true)
+              }}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+            >
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add Service
+            </button>
+          )}
         </div>
-      </div>
 
-      {/* Add Service Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-8 max-w-2xl w-full">
-            <h2 className="text-xl font-semibold mb-4">Add New Service</h2>
-            <form className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {services.map((service) => (
+            <div key={service.id} className="bg-white shadow rounded-lg p-6">
+              <h3 className="text-lg font-medium text-gray-900">{service.title}</h3>
+              <p className="mt-2 text-sm text-gray-500">{service.description}</p>
+              <p className="mt-2 text-sm text-gray-500">By: {service.profiles?.full_name}</p>
+              
+              {user?.id === service.mentor_id && (
+                <div className="mt-4 flex space-x-3">
+                  <button
+                    onClick={() => {
+                      setEditingService(service)
+                      setFormData({
+                        title: service.title,
+                        description: service.description
+                      })
+                      setShowModal(true)
+                    }}
+                    className="text-indigo-600 hover:text-indigo-900"
+                  >
+                    <PencilIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(service.id)}
+                    className="text-red-600 hover:text-red-900"
+                  >
+                    <TrashIcon className="h-5 w-5" />
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <h2 className="text-xl font-semibold mb-4">
+                {editingService ? 'Edit Service' : 'Add Service'}
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Service Name
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">
+                    Title
                   </label>
                   <input
                     type="text"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Category
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description
                   </label>
-                  <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option>Select category</option>
-                    {/* Add categories here */}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Applicable To
-                  </label>
-                  <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option>Staff</option>
-                    <option>Students</option>
-                    <option>Both</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    SLA (days)
-                  </label>
-                  <input
-                    type="number"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Payment Method
-                  </label>
-                  <select className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500">
-                    <option>Pre-payment</option>
-                    <option>Post-payment</option>
-                    <option>None</option>
-                  </select>
+                <div className="flex justify-end space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {editingService ? 'Update' : 'Create'}
+                  </button>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Service Limit
-                  </label>
-                  <input
-                    type="number"
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
-                >
-                  Add Service
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </motion.div>
     </div>
   )
 } 
