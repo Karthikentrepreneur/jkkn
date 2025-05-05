@@ -1681,13 +1681,6 @@ export default function AvailabilitySettings() {
         'Feedback Count'
       ]
       
-      const statsRows = templateStats.map((stat: TemplateStats) => {
-        const row = [
-          stat.template_name,
-          stat.category || '',
-          stat.total_uses,
-          stat.unique_sessions,
-          stat.average_rating.toFixed(1),
       const statsRows = templateStats.map((stat: TemplateStats) => [
         stat.template_name,
         stat.category || '',
@@ -1698,7 +1691,7 @@ export default function AvailabilitySettings() {
         stat.most_used_day,
         stat.most_used_time,
         stat.feedback_count
-      ] as const)
+      ])
       
       // Create CSV content for usage trends
       const trendsHeaders = [
@@ -1708,7 +1701,7 @@ export default function AvailabilitySettings() {
         'Average Rating',
         'Most Used Template',
         'Most Used Category'
-      ] as const
+      ]
       
       const trendsRows = templateTrends.map((trend: TemplateUsageTrends) => [
         new Date(trend.date).toLocaleDateString(),
@@ -1717,7 +1710,7 @@ export default function AvailabilitySettings() {
         trend.average_rating.toFixed(1),
         trend.most_used_template,
         trend.most_used_category
-      ] as const)
+      ])
       
       // Combine all data
       const csvContent = [
