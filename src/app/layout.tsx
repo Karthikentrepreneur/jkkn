@@ -1,13 +1,13 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
-import ClientLayoutWrapper from '@/components/ClientLayoutWrapper'
+import { Inter } from 'next/font/google'
+import Navbar from '@/components/Navbar'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata: Metadata = {
-  title: 'Mentor-Mentee System',
-  description: 'A comprehensive system for managing mentor-mentee relationships and service requests',
+export const metadata = {
+  title: 'Mentor-Mentee Platform',
+  description: 'Connect with mentors and mentees',
 }
 
 export default function RootLayout({
@@ -18,7 +18,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
+        <Navbar />
+        <main>{children}</main>
+        <Toaster position="bottom-right" />
       </body>
     </html>
   )
