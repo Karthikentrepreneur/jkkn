@@ -221,7 +221,7 @@ export default function AvailabilitySettings() {
   const [duplicatingTemplate, setDuplicatingTemplate] = useState<string | null>(null)
   const [showVersionHistory, setShowVersionHistory] = useState<string | null>(null)
   const [templateVersions, setTemplateVersions] = useState<Record<string, TemplateVersion[]>>({})
-  const [templateStats, setTemplateStats] = useState<TemplateUsageStats[]>([])
+  const [templateStats, setTemplateStats] = useState<TemplateStats[]>([])
   const [loadingVersions, setLoadingVersions] = useState(false)
   const [loadingStats, setLoadingStats] = useState(false)
   const [restoringVersion, setRestoringVersion] = useState<string | null>(null)
@@ -2568,15 +2568,15 @@ export default function AvailabilitySettings() {
                                   {template.category}
                                 </span>
                               )}
-                              {templateStats[template.id] && (
+                              {templateStats.find(s => s.template_id === template.id) && (
                                 <div className="flex items-center space-x-2 text-xs text-gray-400">
                                   <span title="Total uses">
                                     <FaChartBar className="inline mr-1" />
-                                    {templateStats[template.id].total_uses}
+                                    {templateStats.find(s => s.template_id === template.id)?.total_uses}
                                   </span>
                                   <span title="Average rating">
                                     <FaStar className="inline mr-1" />
-                                    {templateStats[template.id].average_rating.toFixed(1)}
+                                    {templateStats.find(s => s.template_id === template.id)?.average_rating.toFixed(1)}
                                   </span>
                                 </div>
                               )}
@@ -2979,15 +2979,15 @@ export default function AvailabilitySettings() {
                           {template.category}
                         </span>
                       )}
-                      {templateStats[template.id] && (
+                      {templateStats.find(s => s.template_id === template.id) && (
                         <div className="flex items-center space-x-2 text-xs text-gray-400">
                           <span title="Total uses">
                             <FaChartBar className="inline mr-1" />
-                            {templateStats[template.id].total_uses}
+                            {templateStats.find(s => s.template_id === template.id)?.total_uses}
                           </span>
                           <span title="Average rating">
                             <FaStar className="inline mr-1" />
-                            {templateStats[template.id].average_rating.toFixed(1)}
+                            {templateStats.find(s => s.template_id === template.id)?.average_rating.toFixed(1)}
                           </span>
                         </div>
                       )}
