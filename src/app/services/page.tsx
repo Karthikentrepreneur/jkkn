@@ -1,14 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 
 export default function ServicesPage() {
-  const { user } = useAuth()
   const [services, setServices] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -24,23 +22,10 @@ export default function ServicesPage() {
 
   const fetchServices = async () => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('services')
         .select('*, profiles(full_name)')
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-
-        if (profile?.role === 'mentor') {
-          query = query.eq('mentor_id', user.id)
-        }
-      }
-
-      const { data, error } = await query
       if (error) throw error
       setServices(data || [])
     } catch (error) {
@@ -70,7 +55,7 @@ export default function ServicesPage() {
           .from('services')
           .insert([{
             ...formData,
-            mentor_id: user?.id
+            mentor_id: 'demo-mentor' // Using a demo mentor ID
           }])
 
         if (error) throw error
@@ -118,19 +103,17 @@ export default function ServicesPage() {
       >
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Services</h1>
-          {user && (
-            <button
-              onClick={() => {
-                setEditingService(null)
-                setFormData({ title: '', description: '' })
-                setShowModal(true)
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              <PlusIcon className="h-5 w-5 mr-2" />
-              Add Service
-            </button>
-          )}
+          <button
+            onClick={() => {
+              setEditingService(null)
+              setFormData({ title: '', description: '' })
+              setShowModal(true)
+            }}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add Service
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -138,31 +121,29 @@ export default function ServicesPage() {
             <div key={service.id} className="bg-white shadow rounded-lg p-6">
               <h3 className="text-lg font-medium text-gray-900">{service.title}</h3>
               <p className="mt-2 text-sm text-gray-500">{service.description}</p>
-              <p className="mt-2 text-sm text-gray-500">By: {service.profiles?.full_name}</p>
+              <p className="mt-2 text-sm text-gray-500">By: {service.profiles?.full_name || 'Demo Mentor'}</p>
               
-              {user?.id === service.mentor_id && (
-                <div className="mt-4 flex space-x-3">
-                  <button
-                    onClick={() => {
-                      setEditingService(service)
-                      setFormData({
-                        title: service.title,
-                        description: service.description
-                      })
-                      setShowModal(true)
-                    }}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(service.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </div>
-              )}
+              <div className="mt-4 flex space-x-3">
+                <button
+                  onClick={() => {
+                    setEditingService(service)
+                    setFormData({
+                      title: service.title,
+                      description: service.description
+                    })
+                    setShowModal(true)
+                  }}
+                  className="text-indigo-600 hover:text-indigo-900"
+                >
+                  <PencilIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => handleDelete(service.id)}
+                  className="text-red-600 hover:text-red-900"
+                >
+                  <TrashIcon className="h-5 w-5" />
+                </button>
+              </div>
             </div>
           ))}
         </div>

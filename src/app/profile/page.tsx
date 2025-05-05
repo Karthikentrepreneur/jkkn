@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 
 export default function ProfilePage() {
-  const { user } = useAuth()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
@@ -21,7 +19,7 @@ export default function ProfilePage() {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', user?.id)
+          .eq('id', 'demo-user')
           .single()
 
         if (error) throw error
@@ -38,10 +36,8 @@ export default function ProfilePage() {
       }
     }
 
-    if (user) {
-      fetchProfile()
-    }
-  }, [user])
+    fetchProfile()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -49,7 +45,7 @@ export default function ProfilePage() {
       const { error } = await supabase
         .from('profiles')
         .upsert({
-          id: user?.id,
+          id: 'demo-user',
           ...formData,
           updated_at: new Date().toISOString()
         })
@@ -89,7 +85,7 @@ export default function ProfilePage() {
                 <input
                   type="email"
                   id="email"
-                  value={user?.email}
+                  value="demo@example.com"
                   disabled
                   className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-gray-50"
                 />

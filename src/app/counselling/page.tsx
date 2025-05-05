@@ -1,14 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/components/AuthProvider'
 import { supabase } from '@/lib/supabase'
 import { motion } from 'framer-motion'
 import toast from 'react-hot-toast'
 import { CalendarIcon, ClockIcon } from '@heroicons/react/24/outline'
 
 export default function CounsellingPage() {
-  const { user } = useAuth()
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -26,25 +24,10 @@ export default function CounsellingPage() {
 
   const fetchSessions = async () => {
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('counselling_sessions')
         .select('*, profiles!counselling_sessions_student_id_fkey(full_name), profiles!counselling_sessions_mentor_id_fkey(full_name)')
 
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-
-        if (profile?.role === 'student') {
-          query = query.eq('student_id', user.id)
-        } else if (profile?.role === 'mentor') {
-          query = query.eq('mentor_id', user.id)
-        }
-      }
-
-      const { data, error } = await query
       if (error) throw error
       setSessions(data || [])
     } catch (error) {
@@ -77,7 +60,7 @@ export default function CounsellingPage() {
         .from('counselling_sessions')
         .insert([{
           ...formData,
-          student_id: user?.id,
+          student_id: 'demo-student',
           status: 'scheduled'
         }])
 
@@ -124,14 +107,12 @@ export default function CounsellingPage() {
       >
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">Counselling Sessions</h1>
-          {user && (
-            <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
-            >
-              Schedule Session
-            </button>
-          )}
+          <button
+            onClick={() => setShowModal(true)}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            Schedule Session
+          </button>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
@@ -140,7 +121,7 @@ export default function CounsellingPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="text-lg font-medium text-gray-900">
-                    Session with {session.profiles?.full_name}
+                    Session with {session.profiles?.full_name || 'Demo Mentor'}
                   </h3>
                   <div className="mt-2 flex items-center text-sm text-gray-500">
                     <CalendarIcon className="flex-shrink-0 mr-1.5 h-5 w-5" />
@@ -162,17 +143,15 @@ export default function CounsellingPage() {
                   }`}>
                     {session.status}
                   </span>
-                  {user?.id === session.mentor_id && (
-                    <select
-                      value={session.status}
-                      onChange={(e) => handleStatusUpdate(session.id, e.target.value)}
-                      className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                    >
-                      <option value="scheduled">Scheduled</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  )}
+                  <select
+                    value={session.status}
+                    onChange={(e) => handleStatusUpdate(session.id, e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
                 </div>
               </div>
             </div>
